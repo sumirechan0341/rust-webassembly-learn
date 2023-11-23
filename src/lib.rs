@@ -33,16 +33,43 @@ pub fn main_js() -> Result<(), JsValue> {
         .unwrap()
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
         .unwrap();
-    draw_triangle(&context, [(300.0, 0.0), (0.0, 600.0), (600.0, 600.0)]);
+    sierpinsky(&context, [(300.0, 0.0), (0.0, 600.0), (600.0, 600.0)], 5);
     Ok(())
 }
-
 fn draw_triangle(context: &web_sys::CanvasRenderingContext2d, vertices: [(f64, f64); 3]) {
+    let [(cx, cy), (lx, ly), (rx, ry)] = vertices;
+
+    context.move_to(cx, cy);
     context.begin_path();
-    context.line_to(vertices[0].0, vertices[0].1);
-    context.line_to(vertices[1].0, vertices[1].1);
-    context.line_to(vertices[2].0, vertices[2].1);
+    context.line_to(lx, ly);
+    context.line_to(rx, ry);
+    context.line_to(cx, cy);
     context.close_path();
     context.stroke();
-    context.fill();
+    return;
+}
+
+fn sierpinsky(context: &web_sys::CanvasRenderingContext2d, vertices: [(f64, f64); 3], depth: u32) {
+    draw_triangle(context, vertices);
+    let depth = depth - 1;
+    if depth > 0 {
+        let mid = midpoints(vertices);
+        draw_triangle(context, mid);
+        let triangles = [
+            [mid[1], vertices[1], mid[0]],
+            [mid[2], mid[0], vertices[2]],
+            [vertices[0], mid[1], mid[2]],
+        ];
+        for triangle in triangles.iter() {
+            sierpinsky(context, *triangle, depth);
+        }
+    }
+}
+fn midpoints(vertices: [(f64, f64); 3]) -> [(f64, f64); 3] {
+    let [(cx, cy), (lx, ly), (rx, ry)] = vertices;
+    [
+        ((lx + rx) / 2.0, (ly + ry) / 2.0),
+        ((cx + lx) / 2.0, (cy + ly) / 2.0),
+        ((cx + rx) / 2.0, (cy + ry) / 2.0),
+    ]
 }
